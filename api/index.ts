@@ -38,7 +38,7 @@ async function connectToMongo() {
 const FraseSchema = new mongoose.Schema(
     {
         text: String,
-        autor: String,
+        author: String,
     },
     {
         collection: "Frasesclase"
@@ -56,3 +56,56 @@ function getMongoDebugInfo(){
 }
 
 // 5.- Crearemos todas las rutas, get, post, todo esto vamos a configurarlo en vercel.
+
+
+// Para debug
+app.get("/api/debug-db", async(req: Request, res: Response) => {
+    try {
+        await connectToMongo();
+        res.json(getMongoDebugInfo());
+    } catch (error) {
+        console.error("Error al inspeccionar MongoDB:", error)
+        res.status(500).json({
+            error: "No se pudo inspeccionar la conexión",
+            detail: error instanceof Error ? error.message: "Error desconocido"
+        })
+    }
+});
+
+// GET de las frases
+
+app.get("/api/frases", async(req: Request, res: Response) => {
+    try {
+        await connectToMongo();
+        const frases = await Frase.find();
+        res.json(frases)
+    } catch (error) {
+        console.error("Error al leer frases", error)
+        res.status(500).json({
+            error: "No se pudieron obtener las frases",
+            detail: error instanceof Error ? error.message: "Error desconocido"
+        })
+    }
+});
+
+// POST de las frases
+
+app.get("/api/frases", async(req: Request, res: Response) => {
+    try {
+        const {text, author} = req.body
+        if (!text || !author){
+            res.status(400).json({error: "Debes enviar text y autor, espabila!"})
+        }
+        await connectToMongo();
+        const nuevaFrase = new Frase ({text,author}) // Toma los datos que envia el usuario
+        await nuevaFrase.save() // Lo guarda en la base de datos
+        res.status(201).json(nuevaFrase) // Responde la frase recien creada
+
+    } catch (error) {
+        console.error("Error al crear la frase: ", error)
+        res.status(500).json({
+            error: "No se pudieron obtener las frases",
+            detail: error instanceof Error ? error.message: "Error desconocido"
+        })
+    }
+});
